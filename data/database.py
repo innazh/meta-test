@@ -4,7 +4,8 @@ import psycopg2
 from config.config import get_db_config_vals
 from sqlalchemy import create_engine,types, inspect
 from sqlalchemy.sql import text
-from datetime import date
+from datetime import datetime
+import json
 
 #Database class for managing database connection
 class Database:
@@ -41,12 +42,28 @@ class Database:
         dataframe.to_sql(table, con=self.engine, if_exists='append', index=False)
         conn.close()
 
-    #
+    #deletes row with id=t_id where id_col is the name of the primary key column from the table
     def delete(self,table,id_col,t_id):
         with self.engine.connect() as connection:
             result = connection.execute(text("DELETE FROM "+table+" WHERE "+id_col +"='" +t_id+"';"))
             connection.close()
         #print(result.rowcount)
+
+    #function that runs every time we run this script and 
+    def insert_raw_data(self,data):
+        #Create table if it does not exist
+        conn = self.engine.connect()
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS raw_data(id SERIAL PRIMARY KEY,
+                                                                date TEXT,
+                                                                data TEXT);"""))
+        conn.close()
+        #create dataframe and populate it with data
+        d = [[datetime.now(),data]]
+        df = pd.DataFrame(d,columns=['date','data'])
+        df['data'] = list(map(lambda x: json.dumps(x), df['data']))
+        #insert it to the db
+        df.to_sql('raw_data',con=self.engine, schema=None, index=False, if_exists='append',
+        dtype = {'data':types.String,'date':types.String})
 
     def close(self):
         self.engine.dispose()

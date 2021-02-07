@@ -6,20 +6,18 @@ from data.database import Database,create_table_from_dataframe
 from airflow_service import get_airflow_table, parse_table
 
 #Function that synchronizes the inserts and updates of the airtable with our db
-#note: code will break if the id field of the table is not 'id'. The function will server our current purposes fine though.
 def update_curr_table_with_new_recs(db, airflow_df, db_df, table_name, id_col_name):
     #compare with data from airtable
     #for inserts:"Find Rows in airflow_df Which Are Not Available in db_df"
     newrows = airflow_df.merge(db_df,how = 'outer', left_index=False, right_index=False,indicator=True).loc[lambda x : x['_merge']=='left_only']
     if not newrows.empty: #if row was added or updated
             newrows = newrows.drop('_merge',axis=1)
-            print(newrows)
+
             #check if any of the detected records already exist in the current_dataframe, remove them if they do.
             for i,row in newrows.iterrows():
                 res = db_df.isin([row[0]])
                 if res.any()[id_col_name]:
                     db.delete(table_name, id_col_name,row[0])
-                print(res.any()[0])
             db.insert_df(table_name, newrows)
     else:
         print("No records to update or insert in table "+table_name)
@@ -38,14 +36,19 @@ def remove_old_recs(db, airflow_df, db_df, table_name, id_col_name):
 
 def main():
     airflow_params = get_airtable_config_vals('database.ini')
-    #get airflow data as DataFrame
-    airflow_data = get_airflow_table(airflow_params['url'],airflow_params['api_key'])
-    therapists_df,photos_df,thumbnails_df = parse_table(airflow_data)
-    
     #parse params (config)
-    params = get_db_config_vals('database.ini')
+    params = get_db_config_vals('database.ini') #get airflow data as DataFrame
+    #fetch airflow table data from airflow api
+    airflow_data = get_airflow_table(airflow_params['url'],airflow_params['api_key'])
+    
     #connect to db
     db = Database(params['user'],params['password'],params['host'],params['port'],params['database']) 
+    
+    #insert raw data about the script run and data fetched from airflow into a separate database
+    db.insert_raw_data(airflow_data)
+    #parse airflow table for dataframes
+    therapists_df,photos_df,thumbnails_df = parse_table(airflow_data)
+   
     #if main table doesn't exist then just copy airtable data to our db
     if not db.has_table('psychotherapists'):
         db.create_therapists_table_from_df(therapists_df,'psychotherapists')
@@ -76,8 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# def convertJSONtoPandasDf(json_api_data):
-#     # here we convert the data we got from the api to the data in our postgre db
-#     df = pd.json_normalize(json_api_data)  # import pandas as pd
-#     # https://stackoverflow.com/questions/23103962/how-to-write-dataframe-to-postgres-table
