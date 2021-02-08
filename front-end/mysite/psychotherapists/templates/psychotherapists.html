@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+{% block page_content %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/psychotherapists.css' %}"/>
+<h1>Therapists</h1>
+<div class="row">
+{% for therapist, photo in data %}
+    <div class="col-md-4">
+        <div id="{{photo.p_id}}" class="card mb-2">
+            <img class="card-img-top" src="{{photo.p_url}}">
+            <div class="card-body">
+                <h5 class="card-title">{{ therapist.name }}</h5>
+                <p class="card-text">{{ therapist.description }}</p>
+                <a href="{% url 'psychotherapist_detail' therapist.ph_id %}"
+                   class="btn btn-primary">
+                    Read More
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

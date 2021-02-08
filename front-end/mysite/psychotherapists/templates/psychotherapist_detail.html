@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block page_content %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/psychotherapist_detail.css' %}"/>
+<div class="row">
+    <div class="col-md-8">
+        <img src="{{ photo.p_url }}" alt="" width="100%">
+    </div>
+    <div class="col-md-4">
+        <div class="row">
+        <h5>Фамилия {{therapist.name}} Отчество</h5>
+        </div>
+        <br>
+        <div class="row">
+        <h5>Методы:</h5>
+        </div>
+        <div class="row">
+            {% for method in methods %}
+            <!-- <button type="button" class="btn btn-primary">{{method}}</button> -->
+            <span class="badge bg-primary">{{method}}</span>
+            {% endfor %}    
+        </div>
+
+    </div>
+</div>
+{% endblock %}

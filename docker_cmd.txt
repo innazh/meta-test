@@ -1,6 +1,0 @@
-0. docker pull postgres:alpine - pull the img we're gonna be using for our db
-1. docker build
-2. docker run --name postgresdb -e POSTGRES_PASSWORD=password -dp 5432:5432 imgid - command to spin up the docker container
-(5432 - default postgre port) 
-docker ps - show the containers curr running
-docker images - show docket images that we have
