@@ -1,13 +1,10 @@
-# Тестовое задание для Junior Full Stack Разработчика в Мету - completed
 ## CLI-script
-Содержит Docker файл для того, чтобы запустить PostgreSQL БД и python скрипт по выгрузке данных из airtable.
-Скрипт создает следующие таблицы в БД: psychotherapists, photos, thumbnails и raw_data. Таблицы содержат данные о психотерапевтах, фото, миниатюрах 
-и сырых данных соответственно.
-При повторном запуске, скрипт синхронизирует таблицы в БД с airtable.
+Contains a Docker file to run PostgreSQL database. 
+The script uses airtable API to get data from the remote table, parses & normalizes it, then inserts it into the database.
+Script synchronizes the data base with the data from airtable upon any consequent runs.
 ## front-end
-Содержит Django проект, который устанавливает соединение с нашей БД в докер контейнере. Django приложение отображает данные, находящиеся в нашей БД, 
-по URL /psychotherapists и /psychotherapists/id (где id - это id психотерапевта в БД).
-### Структура отсутствующего файла config.ini в папке CLI-script/config/
+Contains a Django project, which renders the data from the database - the data we collected through the CLI script. It's just a simple mock-up, nothing fancy; my first experience using Django.
+### The structure of a missing file in config.ini, in folder CLI-script/config/
 ````python
 [postgresql]
 host = localhost
