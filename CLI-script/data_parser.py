@@ -74,7 +74,13 @@ def create_thumbnails_table(data):
 
     return thumbnails_df
 
-    
+#Accepts a dataframe, column name and an array of values
+#adds new column to the data frame and assigns the values in the array to it
+def add_column(df, name, arr):
+    df[name]=''
+    for i in range(len(arr)):
+        df[name].loc[i]=arr[i]
+    return df
 
 #accepts a data frame and a column name the values of which need to be extracted
 #goes row by row through the dataframe and appends the values under the selected column to a list
@@ -100,8 +106,10 @@ def process_bulk(data):
     approaches_df = create_approaches_table(methods)
     #2.1.4 Create another table - specialisation, which will establish a relationship between psychotherapists and approaches they use.
     specialisation_df = create_specialisation_table(methods, therapists_df, approaches_df)
+
     #2.2 Start normalization for the photos and thumbnails tables
     #2.2.1 - Create thumbnails table.
     thumbnails_df = create_thumbnails_table(photo_thumbnails_df)
-
+    #2.2.2 - Add a psychotherapists_id column to photos table, which will act as a foreign key.
+    photos_df = add_column(photos_df, "p_id", therapists_df['id'])
     #insert the dataframes into the db
