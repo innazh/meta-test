@@ -1,4 +1,4 @@
-1. docker build -t postgredbimg . - build docker img
+1. docker build -t postgredbimg .           - build docker img
 2. docker run --name postgresdb -e POSTGRES_PASSWORD=password -dp 5432:5432 postgredbimg - command to spin up the docker container, set postgres password
 (5432 - default postgre port) 
 docker ps - show the containers curr running

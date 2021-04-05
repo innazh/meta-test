@@ -1,13 +1,27 @@
 import requests
 import pandas as pd
 
-#Sends a GET request to airtable API, returns JSON data
-def get_airflow_table(url, key):
-    headers = {'Authorization': 'Bearer %s'%key}
-    r = requests.get(url=url, headers=headers)
-    data = r.json()
-    data = data['records']
-    return data
+#A class responsible for communication with Airtable API.
+class AirtableAPI:
+    #accepts api key and url as parameters.
+    def __init__(self, key, url):
+        self.key = key
+        self.url = url
+
+    #Sends a GET request to airtable API, returns JSON data that contains a list of all records
+    def get_all(self):
+        headers = {'Authorization': 'Bearer %s' % self.key}
+        r = requests.get(url=self.url, headers=headers)
+        data = r.json()
+        data = data['records']
+        return data
+
+    #Sends a GET request to airtable API, returns JSON data with a specific record
+    def get(self, record_id):
+        headers = {'Authorization': 'Bearer %s' %self.key}
+        r = requests.get(url=self.url + "/" + record_id, headers=headers)
+        data = r.json()
+        return data
 
 #parses jSON data into dataframes, done according to one of the main design principles in software dev - KISS
 def parse_table(data):

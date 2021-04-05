@@ -3,7 +3,8 @@ import pandas as pd
 import requests
 from config.config import get_db_config_vals,get_airtable_config_vals
 from data.database import Database,create_table_from_dataframe
-from airflow_service import get_airflow_table, parse_table
+from airflow_service import AirtableAPI, parse_table
+from data_parser import process_bulk
 
 #Function that synchronizes the inserts and updates of the airtable with our db
 def update_curr_table_with_new_recs(db, airflow_df, db_df, table_name, id_col_name):
@@ -35,46 +36,56 @@ def remove_old_recs(db, airflow_df, db_df, table_name, id_col_name):
     return
 
 def main():
-    airflow_params = get_airtable_config_vals('config.ini')
     #parse params (config)
+    airflow_params = get_airtable_config_vals('config.ini')
     params = get_db_config_vals('config.ini') #get airflow data as DataFrame
-    #fetch airflow table data from airflow api
-    airflow_data = get_airflow_table(airflow_params['url'],airflow_params['api_key'])
-    
+
+    #fetch airflow table data from airflow api:
+    api_service = AirtableAPI(airflow_params['api_key'], airflow_params['url'])
+    data = api_service.get_all() #get back a list of dicts, size 3 - total number of entries(records)
+
+    # for d in data:
+    #     print(d)
+    #     print(type(d))
+
+    process_bulk(data)
     #connect to db
     db = Database(params['user'],params['password'],params['host'],params['port'],params['database']) 
-    
-    #insert raw data about the script run and data fetched from airflow into a separate database
-    db.insert_raw_data(airflow_data)
-    #parse airflow table for dataframes
-    therapists_df,photos_df,thumbnails_df = parse_table(airflow_data)
-   
-    #if main table doesn't exist then just copy airtable data to our db
-    if not db.has_table('psychotherapists'):
-        db.create_therapists_table_from_df(therapists_df,'psychotherapists')
-        db.create_table_from_df(photos_df,'photos')
-        db.create_table_from_df(thumbnails_df,'thumbnails')
-    #else - compare the data
-    else:
-        #get current dataframes from database
-        curr_therapists_df = db.get_df_from_table('psychotherapists')
-        curr_photos_df = db.get_df_from_table('photos')
-        curr_thumbnails_df = db.get_df_from_table('thumbnails')
-
-        #compare with airtable and synchronize - psychotherapists
-        update_curr_table_with_new_recs(db, therapists_df, curr_therapists_df, 'psychotherapists', 'id')#works on its own
-        curr_therapists_df = db.get_df_from_table('psychotherapists') #refresh the curr df
-        remove_old_recs(db,therapists_df, curr_therapists_df, 'psychotherapists', 'id')
-        #photos
-        update_curr_table_with_new_recs(db, photos_df, curr_photos_df, 'photos', 'id')#works on its own
-        curr_photos_df = db.get_df_from_table('photos') #refresh the curr df
-        remove_old_recs(db,photos_df, curr_photos_df, 'photos', 'id')
-        #thumbnails
-        update_curr_table_with_new_recs(db, thumbnails_df, curr_thumbnails_df, 'thumbnails', 'photo_id')#works on its own
-        curr_thumbnails_df = db.get_df_from_table('thumbnails') #refresh the curr df
-        remove_old_recs(db,thumbnails_df, curr_thumbnails_df, 'thumbnails', 'photo_id')
     db.close()
     return
+
+
+    # #insert raw data about the script run and data fetched from airflow into a separate database
+    # db.insert_raw_data(airflow_data)
+    # #parse airflow table for dataframes
+    # therapists_df,photos_df,thumbnails_df = parse_table(airflow_data)
+   
+    # #if main table doesn't exist then just copy airtable data to our db
+    # if not db.has_table('psychotherapists'):
+    #     db.create_therapists_table_from_df(therapists_df,'psychotherapists')
+    #     db.create_table_from_df(photos_df,'photos')
+    #     db.create_table_from_df(thumbnails_df,'thumbnails')
+    # #else - compare the data
+    # else:
+    #     #get current dataframes from database
+    #     curr_therapists_df = db.get_df_from_table('psychotherapists')
+    #     curr_photos_df = db.get_df_from_table('photos')
+    #     curr_thumbnails_df = db.get_df_from_table('thumbnails')
+
+    #     #compare with airtable and synchronize - psychotherapists
+    #     update_curr_table_with_new_recs(db, therapists_df, curr_therapists_df, 'psychotherapists', 'id')#works on its own
+    #     curr_therapists_df = db.get_df_from_table('psychotherapists') #refresh the curr df
+    #     remove_old_recs(db,therapists_df, curr_therapists_df, 'psychotherapists', 'id')
+    #     #photos
+    #     update_curr_table_with_new_recs(db, photos_df, curr_photos_df, 'photos', 'id')#works on its own
+    #     curr_photos_df = db.get_df_from_table('photos') #refresh the curr df
+    #     remove_old_recs(db,photos_df, curr_photos_df, 'photos', 'id')
+    #     #thumbnails
+    #     update_curr_table_with_new_recs(db, thumbnails_df, curr_thumbnails_df, 'thumbnails', 'photo_id')#works on its own
+    #     curr_thumbnails_df = db.get_df_from_table('thumbnails') #refresh the curr df
+    #     remove_old_recs(db,thumbnails_df, curr_thumbnails_df, 'thumbnails', 'photo_id')
+    # db.close()
+    # return
 
 
 if __name__ == "__main__":
