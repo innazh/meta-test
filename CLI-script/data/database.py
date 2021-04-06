@@ -15,6 +15,7 @@ class Database:
 
     def get_connection(self):
         return self.engine.connect()
+
     #Returns True if database has table with name
     def has_table(self, name):
         return self.engine.has_table(name)
@@ -25,8 +26,11 @@ class Database:
         dtype = {'createdTime':types.String,'fields.Имя':types.String,'fields.PhotoId':types.String,'fields.Методы':types.String})
 
     #Uploads DataFrame to the database, creates new table with tablename
-    def create_table_from_df(self,df,tablename):
-        df.to_sql(tablename,con=self.engine, schema=None, index=False, if_exists='replace')
+    def create_table_from_df(self, df, tablename):
+        index_flag=False
+        if df.index.name=="id":
+            index_flag = True
+        df.to_sql(tablename, con=self.engine, schema=None, index=index_flag, if_exists='replace')
 
     #Selects all data from given table, returns it as DataFrame
     def get_df_from_table(self,tablename):
@@ -65,19 +69,34 @@ class Database:
         df.to_sql('raw_data',con=self.engine, schema=None, index=False, if_exists='append',
         dtype = {'data':types.String,'date':types.String})
 
+    #manage keys
+    #Accepts the name of the talbe for which the PK needs to be set and a list of PR column names
+    #Executes ALTER TABLE command on the db connaction
+    def set_primary_key(self, table, pk_cols):
+        con = self.engine.connect()
+        q = 'alter table ' + table + ' add primary key('
+        for i, col in enumerate(pk_cols):
+            q+= col + ','
+        q = q[:-1]
+        q+=');'
+        print(q)
+        con.execute(q)
+        con.close()
+
+    #Accepts the name of the talbe for which the FK needs to be set, name of the FK column, 
+    #name of the referenced table and the referenced column name
+    #Executes ALTER TABLE command on the db connaction
+    def set_foreign_key(self, table, fk_col, ref_table, ref_col):
+        con = self.engine.connect()
+        q = 'ALTER TABLE ' + table + ' ADD FOREIGN KEY(' + fk_col + ')' + ' REFERENCES ' + ref_table + ' (' + ref_col + ') ' + 'on delete cascade;' 
+        print(q)
+        con.execute(q)
+        con.close()
+    #https://stackoverflow.com/questions/17325006/how-to-create-a-foreignkey-reference-with-sqlalchemy
+    #https://www.fullstackpython.com/sqlalchemy-schema-createtable-examples.html
+
+
     def close(self):
         self.engine.dispose()
-
-# Take in a PostgreSQL connection and a table name, creates a table
-def create_table_from_dataframe(conn, username, password, host, port,tablename, airflow_table_df):
-    airflow_table_df['ДатаЗапуска']=datetime.now()
-    
-    try:
-        engine = create_engine('postgresql+psycopg2://%s:%s@%s:%s/%s'%(username,password,host,port,tablename))
-        airflow_table_df.to_sql(tablename,con=engine, schema=None, index=True, if_exists='append',
-        dtype = {'createdTime':types.DateTime,'fields.Имя':types.String,'fields.Фотография':types.JSON,'fields.Методы':types.ARRAY(types.String)})
-    except Exception as e:
-        print(e)
-    engine.dispose()
 
 

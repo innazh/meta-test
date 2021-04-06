@@ -2,9 +2,9 @@
 import pandas as pd
 import requests
 from config.config import get_db_config_vals,get_airtable_config_vals
-from data.database import Database,create_table_from_dataframe
+from data.database import Database
 from airflow_service import AirtableAPI, parse_table
-from data_parser import process_bulk
+from parser.data_parser import process_bulk
 
 #Function that synchronizes the inserts and updates of the airtable with our db
 def update_curr_table_with_new_recs(db, airflow_df, db_df, table_name, id_col_name):
@@ -44,13 +44,27 @@ def main():
     api_service = AirtableAPI(airflow_params['api_key'], airflow_params['url'])
     data = api_service.get_all() #get back a list of dicts, size 3 - total number of entries(records)
 
-    # for d in data:
-    #     print(d)
-    #     print(type(d))
+    #break up the data into separate data frames (acheived through the normalization process)
+    therapists_df, photos_df, approaches_df, specialisation_df, thumbnails_df = process_bulk(data)
 
-    process_bulk(data)
     #connect to db
     db = Database(params['user'],params['password'],params['host'],params['port'],params['database']) 
+    
+    #insert raw data about the script run and data fetched from airflow into a separate database
+    db.insert_raw_data(data)
+    #if main table doesn't exist then just insert airtable data to our db
+    if not db.has_table('psychotherapists'):
+        print("yes")
+        create_tables(db, therapists_df, photos_df, approaches_df, specialisation_df, thumbnails_df)
+        #Set the relationships between the tables:
+        #1. Set primary keys
+        set_pks(db)
+        #2. Set foreign keys
+        set_fks(db)
+
+    else:
+        print("compare")
+    
     db.close()
     return
 
@@ -87,6 +101,27 @@ def main():
     # db.close()
     # return
 
+def create_tables(db, therapists_df, photos_df, approaches_df, specialisation_df, thumbnails_df):
+    db.create_table_from_df(therapists_df,'psychotherapist')
+    db.create_table_from_df(photos_df,'photo')
+    db.create_table_from_df(approaches_df,'approach')
+    db.create_table_from_df(specialisation_df,'specialisation')
+    db.create_table_from_df(thumbnails_df,'thumbnail')
+
+#TODO: think abt carrying this func over to the database file
+#functions for setting the keys for all tables
+def set_pks(db):
+    db.set_primary_key("psychotherapist", ["id"])
+    db.set_primary_key("photo", ["id"])
+    db.set_primary_key("approach", ["id"])
+    db.set_primary_key("specialisation", ["p_id", "a_id"])
+    db.set_primary_key("thumbnail", ["id"])
+
+def set_fks(db):
+    db.set_foreign_key("photo", "p_id", "psychotherapist", "id")
+    db.set_foreign_key("specialisation", "p_id", "psychotherapist", "id")
+    db.set_foreign_key("specialisation", "a_id", "approach", "id")
+    db.set_foreign_key("thumbnail", "photo_id", "photo", "id")
 
 if __name__ == "__main__":
     main()
