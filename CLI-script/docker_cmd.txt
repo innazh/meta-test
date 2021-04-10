@@ -3,3 +3,5 @@
 (5432 - default postgre port) 
 docker ps - show the containers curr running
 docker images - show docket images that we have
+
+https://api.airtable.com/v0/appJFLErc7HfpOPAM/Psychotherapists

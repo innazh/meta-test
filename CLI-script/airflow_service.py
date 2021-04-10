@@ -22,6 +22,10 @@ class AirtableAPI:
         r = requests.get(url=self.url + "/" + record_id, headers=headers)
         data = r.json()
         return data
+    #Returns an array of approaches used by a certain psychotherapist
+    def get_approaches(self, therapist_id):
+        data = self.get(therapist_id)
+        return data['fields']['Методы']
 
 #parses jSON data into dataframes, done according to one of the main design principles in software dev - KISS
 def parse_table(data):

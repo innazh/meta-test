@@ -10,20 +10,19 @@ def process_bulk(data):
     #2.1.3 Create a separate table - approaches, that'll contain all treatment approaches available
     approaches_df = create_approaches_table(methods)
     #2.1.4 Create another table - specialisation, which will establish a relationship between psychotherapists and approaches they use.
-    specialisation_df = create_specialisation_table(methods, therapists_df, approaches_df)
+    specialisation_df = create_specialisation_table(methods, therapists_df['id'].values, approaches_df)
     #2.2 Rename the name column in therapists table
     therapists_df.rename(columns={"fields.Имя":"name"}, inplace=True)
-    
     #2.3 Start normalization for the photos and thumbnails tables
     #2.3.1 - Create thumbnails table.
     thumbnails_df = create_thumbnails_table(photo_thumbnails_df)
     #2.3.2 - Add a psychotherapists_id column to photos table, which will act as a foreign key.
     photos_df = add_column(photos_df, "p_id", therapists_df['id'])
-    print(therapists_df)
-    print(photos_df)
-    print(approaches_df)
-    print(specialisation_df)
-    print(thumbnails_df)
+    # print(therapists_df)
+    # print(photos_df)
+    # print(approaches_df)
+    # print(specialisation_df)
+    # print(thumbnails_df)
 
     return therapists_df, photos_df, approaches_df, specialisation_df, thumbnails_df
 
@@ -43,11 +42,11 @@ def create_approaches_table(methods):
 
 #Accepts a 2d list of methods, a dataframe for approaches(methods) table and a data frame for therapists table
 #Return a dataframe "specialisation" - table that links therapists and approaches tables together
-def create_specialisation_table(methods, therapists_df, approaches_df):
+def create_specialisation_table(methods, therapists_ids, approaches_df):
     specialisation_df = pd.DataFrame(columns=['p_id', 'a_id'])
 
     for i, row in enumerate(methods):
-        p_id = therapists_df['id'].loc[i]
+        p_id = therapists_ids[i]
         for method in row:
             a_id = find_value(approaches_df, method, 'name', 1)
             df = pd.DataFrame([[p_id, a_id]], columns=['p_id', 'a_id'])

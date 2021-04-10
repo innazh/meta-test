@@ -1,27 +1,16 @@
 # Import libraries
+import math
 import pandas as pd
 import requests
 from config.config import get_db_config_vals,get_airtable_config_vals
 from data.database import Database
 from airflow_service import AirtableAPI, parse_table
 from parser.data_parser import process_bulk
+from change_manager.change_manager import manage_airtable_changes_psychotherapist, manage_airtable_changes_photo, manage_airtable_changes_thumbnail, manage_airtable_changes_approach, manage_airtable_changes_specialisation
 
+#Accepts a database object, airtable dataframe, data frame with current data from our db, and the pk column name
 #Function that synchronizes the inserts and updates of the airtable with our db
 def update_curr_table_with_new_recs(db, airflow_df, db_df, table_name, id_col_name):
-    #compare with data from airtable
-    #for inserts:"Find Rows in airflow_df Which Are Not Available in db_df"
-    newrows = airflow_df.merge(db_df,how = 'outer', left_index=False, right_index=False,indicator=True).loc[lambda x : x['_merge']=='left_only']
-    if not newrows.empty: #if row was added or updated
-            newrows = newrows.drop('_merge',axis=1)
-
-            #check if any of the detected records already exist in the current_dataframe, remove them if they do.
-            for i,row in newrows.iterrows():
-                res = db_df.isin([row[0]])
-                if res.any()[id_col_name]:
-                    db.delete(table_name, id_col_name,row[0])
-            db.insert_df(table_name, newrows)
-    else:
-        print("No records to update or insert in table "+table_name)
     return
 
 #Performs a merge on the dataframes removes the records that are present in the database but aren't present in the airflow
@@ -53,7 +42,7 @@ def main():
     #insert raw data about the script run and data fetched from airflow into a separate database
     db.insert_raw_data(data)
     #if main table doesn't exist then just insert airtable data to our db
-    if not db.has_table('psychotherapists'):
+    if not db.has_table('psychotherapist'):
         print("yes")
         create_tables(db, therapists_df, photos_df, approaches_df, specialisation_df, thumbnails_df)
         #Set the relationships between the tables:
@@ -63,8 +52,25 @@ def main():
         set_fks(db)
 
     else:
-        print("compare")
-    
+        #get current dataframes from database
+        curr_therapists_df = db.get_df_from_table('psychotherapist')
+        curr_photos_df = db.get_df_from_table('photo')
+        curr_thumbnails_df = db.get_df_from_table('thumbnail')
+        curr_approach_df = db.get_df_from_table('approach')
+        curr_specialisation_df = db.get_df_from_table('specialisation')
+
+        #handle new records and updates
+        changed_p_ids = manage_airtable_changes_psychotherapist(db, therapists_df, curr_therapists_df)
+        manage_airtable_changes_photo(db, photos_df, curr_photos_df)
+        manage_airtable_changes_thumbnail(db, thumbnails_df, curr_thumbnails_df)
+        manage_airtable_changes_approach(db, approaches_df, curr_approach_df)
+        #refresh current approach df
+        curr_approach_df = db.get_df_from_table('approach')
+        manage_airtable_changes_specialisation(db, api_service, changed_p_ids, curr_approach_df)
+
+        #handle delete:
+
+
     db.close()
     return
 
@@ -111,11 +117,11 @@ def create_tables(db, therapists_df, photos_df, approaches_df, specialisation_df
 #TODO: think abt carrying this func over to the database file
 #functions for setting the keys for all tables
 def set_pks(db):
-    db.set_primary_key("psychotherapist", ["id"])
-    db.set_primary_key("photo", ["id"])
-    db.set_primary_key("approach", ["id"])
-    db.set_primary_key("specialisation", ["p_id", "a_id"])
-    db.set_primary_key("thumbnail", ["id"])
+    db.set_primary_key("psychotherapist", ["id"], False)
+    db.set_primary_key("photo", ["id"], False)
+    db.set_primary_key("approach", ["id"], True)
+    db.set_primary_key("specialisation", ["p_id", "a_id"], False)
+    db.set_primary_key("thumbnail", ["id"], True)
 
 def set_fks(db):
     db.set_foreign_key("photo", "p_id", "psychotherapist", "id")

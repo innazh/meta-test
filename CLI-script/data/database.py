@@ -72,14 +72,17 @@ class Database:
     #manage keys
     #Accepts the name of the talbe for which the PK needs to be set and a list of PR column names
     #Executes ALTER TABLE command on the db connaction
-    def set_primary_key(self, table, pk_cols):
+    def set_primary_key(self, table, pk_cols, autoincrement):
         con = self.engine.connect()
         q = 'alter table ' + table + ' add primary key('
+        
         for i, col in enumerate(pk_cols):
             q+= col + ','
         q = q[:-1]
         q+=');'
+        
         print(q)
+        
         con.execute(q)
         con.close()
 
