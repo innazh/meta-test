@@ -30,19 +30,19 @@ def delete_rec_if_present(db, rows, curr_df, id_col_name, table_name):
             db.delete(table_name, id_col_name,row[0])
             print("Delete from "+table_name+", row="+row[0]+", col name = " + id_col_name)
 
-def manage_airtable_changes_psychotherapist(db, therapists_df, curr_therapists_df):
+def handle_psychotherapist(db, therapists_df, curr_therapists_df):
     t_changed = get_new_or_changed_records(db, therapists_df, curr_therapists_df, 'psychotherapist')
     delete_rec_if_present(db, t_changed, curr_therapists_df, 'id', 'psychotherapist')
     db.insert_df('psychotherapist', t_changed)
 
     return t_changed['id'].values    
 
-def manage_airtable_changes_photo(db, photo_df, curr_photo_df):
+def handle_photo(db, photo_df, curr_photo_df):
     changed = get_new_or_changed_records(db, photo_df, curr_photo_df, 'photo')
     delete_rec_if_present(db, changed, curr_photo_df, 'id', 'photo')
     db.insert_df('photo', changed)     
 
-def manage_airtable_changes_thumbnail(db, t_df, curr_t_df):
+def handle_thumbnail(db, t_df, curr_t_df):
     changed = get_new_or_changed_records(db, t_df, curr_t_df, 'thumbnail')
     delete_rec_if_present(db, changed, t_df, 'photo_id', 'thumbnail')
     next_id = len(curr_t_df)+1
@@ -53,7 +53,7 @@ def manage_airtable_changes_thumbnail(db, t_df, curr_t_df):
         next_id+=1
     db.insert_df('thumbnail', changed) 
 
-def manage_airtable_changes_approach(db, a_df, curr_a_df):
+def handle_approach(db, a_df, curr_a_df):
     changed = get_new_or_changed_records(db, a_df, curr_a_df, 'approach')
     delete_rec_if_present(db, changed, curr_a_df, 'name', 'approach')
     next_id = len(curr_a_df)+1
@@ -68,8 +68,10 @@ def manage_airtable_changes_approach(db, a_df, curr_a_df):
 #a list of approaches handled by every therapist
 #1. Clean every entry for p_ids that are contained here.
 #2. Pair the data and insert these pairs inside the db
-def manage_airtable_changes_specialisation(db, api_service, p_ids, curr_a_df):
+def handle_specialisation(db, api_service, p_ids, curr_a_df):
     approaches = []
+    if not p_ids:
+        return
     #delete
     for p_id in p_ids:
         print("Delete " + p_id + " from specialisation table")
