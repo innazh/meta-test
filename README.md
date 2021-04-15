@@ -2,9 +2,9 @@
 When executed, fetches the data from [airtable](https://airtable.com/tbluLvKNHYbfB9dIx/viwrSuC004YewKyGr?blocks=hide) using AirtableAPI and converts the table data into a relational database, which is then inserted into PostgreSQL database running on the Docker container.
 
 Functionality breakdown:
-    1. Get JSON data using AirtableAPI.
-    2. Unpack and separate the data into separate tables using [Pandas](https://pandas.pydata.org/) and complete the normalisation process.
-    3. Insert the achieved dataframes into PostgreSQL database.
+1. Get JSON data using AirtableAPI.
+2. Unpack and separate the data into separate tables using [Pandas](https://pandas.pydata.org/) and complete the normalisation process.
+3. Insert the achieved dataframes into PostgreSQL database.
 
 A snapshot of the initial data format:
 ![Initial](airtable.png)
