@@ -12,8 +12,8 @@ A snapshot of the initial data format:
 {
             "id": "recV73dV4CcUq88IY",
             "fields": {
-                "Имя": "Василий",
-                "Фотография": [
+                "Имя": "Василий", //"Name":
+                "Фотография": [   //"Photo":
                     {
                         "id": "attY7G4ysiIDnSaUw",
                         "url": "https://dl.airtable.com/.attachments/7da0d4c7963babf742137abc4e9a1a99/5f547505/1.jpg",
@@ -39,7 +39,7 @@ A snapshot of the initial data format:
                         }
                     }
                 ],
-                "Методы": [
+                "Методы": [   //"Treatment approaches" - 'Approaches' for short
                     "Психоанализ",
                     "Коучинг",
                     "Музыкотерапия"
