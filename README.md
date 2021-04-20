@@ -7,6 +7,7 @@ Functionality breakdown:
 3. Insert the achieved dataframes into PostgreSQL database.
 
 A snapshot of the initial data format:
+(columns translate as "Name", "Photo", "Methods" or "Treatment approaches"
 ![Initial](airtable.png)
 ```json
 {
